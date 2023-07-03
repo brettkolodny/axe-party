@@ -10,10 +10,12 @@ import List.Extra exposing (setAt)
 import Model exposing (Model)
 import Msg exposing (Msg(..))
 import Particle.System
+import Process
 import Random
 import Random.Extra
 import Random.Float exposing (normal)
 import ResetModal exposing (resetModal)
+import Task
 import VitePluginHelper
 
 
@@ -102,25 +104,28 @@ update msg model =
                         |> List.foldl (\t acc -> t + acc) 0
                         |> (\total -> total == 25)
 
-                fireworks =
+                cmd =
                     if perfectGame then
-                        Particle.System.burst
-                            (Random.Extra.andThen3 fireworkAt
-                                (Random.uniform Red [ Green, Blue ])
-                                (normal 300 100)
-                                (normal 300 100)
-                            )
-                            model.fireworks
+                        [ delay 0 Detonate
+                        , delay 1000 Detonate
+                        , delay 2000 Detonate
+                        , delay 3000 Detonate
+                        , delay 4000 Detonate
+                        , delay 5000 Detonate
+                        , delay 6000 Detonate
+                        , delay 7000 Detonate
+                        ]
+                            |> Cmd.batch
 
                     else
-                        model.fireworks
+                        Cmd.none
             in
             case player of
                 Msg.Player1 ->
-                    ( { model | player1 = { throws = setThrows model.player1.throws, currentThrow = Nothing }, fireworks = fireworks }, Cmd.none )
+                    ( { model | player1 = { throws = setThrows model.player1.throws, currentThrow = Nothing } }, cmd )
 
                 Msg.Player2 ->
-                    ( { model | player2 = { throws = setThrows model.player2.throws, currentThrow = Nothing }, fireworks = fireworks }, Cmd.none )
+                    ( { model | player2 = { throws = setThrows model.player2.throws, currentThrow = Nothing } }, cmd )
 
 
 view : Model -> Html Msg
@@ -139,3 +144,16 @@ view model =
         , Particle.System.view fireworkView [ style "width" "100vw", style "height" "100vh", style "position" "fixed", style "pointer-events" "none", style "top" "0", style "left" "0" ] model.fireworks
         , resetModal model
         ]
+
+
+delay : Float -> msg -> Cmd msg
+delay time msg =
+    -- create a task that sleeps for `time`
+    Process.sleep time
+        |> -- once the sleep is over, ignore its output (using `always`)
+           -- and then we create a new task that simply returns a success, and the msg
+           Task.andThen (always <| Task.succeed msg)
+        |> -- finally, we ask Elm to perform the Task, which
+           -- takes the result of the above task and
+           -- returns it to our update function
+           Task.perform identity
