@@ -80,7 +80,7 @@ view model =
             , game model Msg.Player2
             ]
         , button
-            [ onClick <| SetShowResetModal True, class "w-[256px] h-12 bg-hatchets-green font-bold text-white text-[24px]" ]
+            [ onClick <| SetShowResetModal True, class "w-[256px] h-12 bg-red-600 font-bold text-white text-[24px]" ]
             [ text "Reset Match" ]
         , resetModal model
         ]

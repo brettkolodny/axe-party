@@ -77,10 +77,10 @@ scoreButton player points currentThrow isDisabled =
     let
         style =
             if not isDisabled then
-                "w-full h-10 bg-hatchets-green font-bold text-white text-[18px]"
+                "w-full h-10 bg-hatchets-green-600 font-bold text-white text-[18px]"
 
             else
-                "w-full h-10 bg-hatchets-green/50 font-bold text-thunder-50 text-[18px] cursor-not-allowed"
+                "w-full h-10 bg-hatchets-green-600/50 font-bold text-thunder-50 text-[18px] cursor-not-allowed"
     in
     button
         [ onClick (SetScore player currentThrow (Just points))
@@ -124,7 +124,7 @@ throwsDisplay player throws currentThrow =
                     button [ onClick <| SetCurrentThrow player (Just index), class <| "flex items-center justify-center h-12 w-12 bg-thunder-500 text-white text-[24px] font-bold" ++ border ] [ text <| String.fromInt s ]
 
                 _ ->
-                    button [ onClick <| SetCurrentThrow player (Just index), class <| "flex items-center justify-center h-12 w-12 bg-thunder-500/40 text-thunder-50 text-[24px] font-bold" ++ border ] [ text "0" ]
+                    button [ onClick <| SetCurrentThrow player (Just index), class <| "flex items-center justify-center h-12 w-12 bg-thunder-500/40 text-thunder-600 text-[24px] font-bold" ++ border ] [ text "0" ]
     in
     div [ class "flex items-center gap-8" ]
         (List.indexedMap
