@@ -42,8 +42,8 @@ game model player =
                 0
                 throws
     in
-    div [ class "flex flex-col justify-center items-center gap-12" ]
-        [ div [ class "flex flex-col justify-center items-center gap-6" ]
+    div [ class "flex flex-col justify-center items-center gap-6" ]
+        [ div [ class "flex flex-col justify-center items-center gap-4" ]
             -- Header
             [ div
                 [ style "background-image"
@@ -77,10 +77,10 @@ scoreButton player points currentThrow isDisabled =
     let
         style =
             if not isDisabled then
-                "w-full h-12 bg-hatchets-green font-bold text-white text-[24px]"
+                "w-full h-10 bg-hatchets-green font-bold text-white text-[18px]"
 
             else
-                "w-full h-12 bg-hatchets-green/50 font-bold text-thunder-50 text-[24px] cursor-not-allowed"
+                "w-full h-10 bg-hatchets-green/50 font-bold text-thunder-50 text-[18px] cursor-not-allowed"
     in
     button
         [ onClick (SetScore player currentThrow (Just points))
