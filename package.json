@@ -19,7 +19,8 @@
     "postcss": "^8.4.24",
     "tailwindcss": "^3.3.2",
     "vite": "^4.3.0",
-    "vite-plugin-elm": "^2.8.0-beta.3"
+    "vite-plugin-elm": "^2.8.0-beta.3",
+    "vite-plugin-pwa": "^0.16.4"
   },
   "dependencies": {
     "elm-debug-transformer": "^1.1.2"
