@@ -52,8 +52,8 @@ update msg model =
                     Particle.System.burst
                         (Random.Extra.andThen3 fireworkAt
                             (Random.uniform Red [ Green, Blue ])
-                            (normal 300 100)
-                            (normal 300 100)
+                            (normal 500 500)
+                            (normal 500 500)
                         )
                         model.fireworks
             in
