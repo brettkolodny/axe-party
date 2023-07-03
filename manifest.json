@@ -1,0 +1,16 @@
+{
+    "short_name": "Axe Party",
+    "name": "Axe Party",
+    "decription": "An application for playing axe related games",
+    "icons": [
+      {
+        "src": "src/assets/icon.svg",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4BC0A9"
+  }
