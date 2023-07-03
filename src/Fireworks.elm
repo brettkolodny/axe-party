@@ -1,3 +1,9 @@
+{--
+Fully lifted from one of the examples in elm-particle
+https://github.com/BrianHicks/elm-particle/tree/1.5.0
+--}
+
+
 module Fireworks exposing (..)
 
 import Particle exposing (Particle)

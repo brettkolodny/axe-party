@@ -146,6 +146,10 @@ view model =
         ]
 
 
+
+-- From https://stackoverflow.com/questions/40599512/how-to-achieve-behavior-of-settimeout-in-elm
+
+
 delay : Float -> msg -> Cmd msg
 delay time msg =
     -- create a task that sleeps for `time`
