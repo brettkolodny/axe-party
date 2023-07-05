@@ -2,8 +2,8 @@ module Main exposing (main)
 
 import Browser
 import Fireworks exposing (Color(..), Firework, fireworkAt, fireworkView)
-import Html exposing (Html, button, div, h1, h2, p, text)
-import Html.Attributes exposing (class, disabled, style)
+import Html exposing (Html, button, div, h1, h2, input, p, text)
+import Html.Attributes exposing (class, disabled, style, type_)
 import Html.Events exposing (onClick)
 import List.Extra exposing (setAt)
 import Maybe.Extra
@@ -30,8 +30,11 @@ type Msg
     | ResetGame
     | SetCurrentThrow Role (Maybe Int)
     | SetShowResetModal Bool
+    | SetShowOptionsModal Bool
     | Detonate
     | ParticleMsg (Particle.System.Msg Firework)
+    | SetNumThrows Int
+    | SwapSides
 
 
 
@@ -48,29 +51,33 @@ type alias Model =
     { player1 : Player
     , player2 : Player
     , showResetModal : Bool
+    , showOptionsModal : Bool
     , fireworks : Particle.System.System Firework
+    , numThrows : Int
+    , swapSides : Bool
     }
 
 
-newPlayer : Player
-newPlayer =
-    { throws =
-        [ Nothing
-        , Nothing
-        , Nothing
-        , Nothing
-        , Nothing
-        ]
+newPlayer : Int -> Player
+newPlayer numThrows =
+    let
+        throws =
+            List.repeat numThrows Nothing
+    in
+    { throws = throws
     , currentThrow = Nothing
     }
 
 
 newModel : Model
 newModel =
-    { player1 = newPlayer
-    , player2 = newPlayer
+    { player1 = newPlayer 5
+    , player2 = newPlayer 5
     , showResetModal = False
+    , showOptionsModal = False
     , fireworks = Particle.System.init <| Random.initialSeed 0
+    , numThrows = 5
+    , swapSides = False
     }
 
 
@@ -110,8 +117,43 @@ update msg model =
                 Player2 ->
                     ( { model | player2 = { currentThrow = throw, throws = model.player2.throws } }, Cmd.none )
 
+        SwapSides ->
+            ( { model | swapSides = not model.swapSides }, Cmd.none )
+
+        SetNumThrows numThrows ->
+            let
+                setPlayerThrows player =
+                    if List.length player.throws > numThrows then
+                        List.take numThrows player.throws
+
+                    else
+                        player.throws ++ List.repeat (numThrows - List.length player.throws) Nothing
+
+                player1 =
+                    model.player1
+
+                newPlayer1 =
+                    { player1 | throws = setPlayerThrows player1 }
+
+                player2 =
+                    model.player2
+
+                newPlayer2 =
+                    { player2 | throws = setPlayerThrows player2 }
+            in
+            ( { model
+                | numThrows = numThrows
+                , player1 = newPlayer1
+                , player2 = newPlayer2
+              }
+            , Cmd.none
+            )
+
         SetShowResetModal show ->
             ( { model | showResetModal = show }, Cmd.none )
+
+        SetShowOptionsModal show ->
+            ( { model | showOptionsModal = show }, Cmd.none )
 
         Detonate ->
             let
@@ -169,7 +211,7 @@ update msg model =
                         |> setThrows
                         |> List.map (\t -> Maybe.withDefault 0 t)
                         |> List.foldl (\t acc -> t + acc) 0
-                        |> (\total -> total == 25)
+                        |> (\total -> total == model.numThrows * 5)
 
                 cmd =
                     if perfectGame then
@@ -201,19 +243,32 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
+    let
+        gameBoard =
+            if model.swapSides then
+                [ game model Player2, game model Player1 ]
+
+            else
+                [ game model Player1, game model Player2 ]
+    in
     div
         [ class "flex flex-col justify-center items-center min-w-screen min-h-screen bg-thunder-900 gap-12"
         , style "background-image" ("url('" ++ VitePluginHelper.asset "/src/assets/chains.svg" ++ "')")
         ]
-        [ div [ class "flex items-center justify-center gap-[126px]" ]
-            [ game model Player1
-            , game model Player2
+        [ button [ onClick <| SetShowOptionsModal True, class "fixed right-4 top-4 px-3 py-2 bg-thunder-400 text-white" ] [ text "Options" ]
+        , div [ class "flex items-center justify-evenly w-full max-w-[1000px]" ]
+            gameBoard
+        , div [ class "flex items-center gap-8" ]
+            [ button
+                [ onClick SwapSides, class "w-[256px] h-12 bg-thunder-600 font-bold text-white text-[24px]" ]
+                [ text "Swap Sides" ]
+            , button
+                [ onClick <| SetShowResetModal True, class "w-[256px] h-12 bg-red-600 font-bold text-white text-[24px]" ]
+                [ text "Reset Match" ]
             ]
-        , button
-            [ onClick <| SetShowResetModal True, class "w-[256px] h-12 bg-red-600 font-bold text-white text-[24px]" ]
-            [ text "Reset Match" ]
         , Particle.System.view fireworkView [ style "width" "100vw", style "height" "100vh", style "position" "fixed", style "pointer-events" "none", style "top" "0", style "left" "0" ] model.fireworks
         , resetModal model
+        , optionsModal model
         ]
 
 
@@ -333,7 +388,7 @@ throwsDisplay player throws currentThrow =
                 _ ->
                     button [ onClick <| SetCurrentThrow player (Just index), class <| "flex items-center justify-center h-12 w-12 bg-thunder-500/40 text-thunder-600 text-[24px] font-bold" ++ border ] [ text "0" ]
     in
-    div [ class "flex items-center gap-8" ]
+    div [ class "flex items-center justify-between flex-wrap w-[320px] gap-4" ]
         (List.indexedMap
             (\i t -> singleThrow t i)
             throws
@@ -351,6 +406,25 @@ resetModal model =
                     [ button [ onClick <| SetShowResetModal False, class "px-4 py-3 bg-thunder-400 text-white" ] [ text "Back" ]
                     , button [ onClick ResetGame, class "px-4 py-3 bg-red-600 text-white" ] [ text "Reset" ]
                     ]
+                ]
+            ]
+
+    else
+        div [ class "hidden" ] []
+
+
+optionsModal : Model -> Html Msg
+optionsModal model =
+    if model.showOptionsModal then
+        div [ class "fixed flex items-center justify-center w-screen h-screen inset-0 bg-black/50" ]
+            [ div [ class "flex flex-col justify-center items-center gap-6 bg-thunder-50 p-8" ]
+                [ h2 [ class "text-2xl font-bold" ] [ text "Options" ]
+                , div [ class "flex items-center justify-between gap-12 w-full" ]
+                    [ button [ onClick <| SetNumThrows <| model.numThrows - 1, class "bg-hatchets-green text-white py-2 w-12" ] [ text "-1" ]
+                    , p [ class "text-2xl" ] [ text <| String.fromInt model.numThrows ++ " throws" ]
+                    , button [ onClick <| SetNumThrows <| model.numThrows + 1, class "bg-hatchets-green text-white py-2 w-12" ] [ text "+1" ]
+                    ]
+                , button [ onClick <| SetShowOptionsModal False, class "px-3 py-2 bg-thunder-400 text-white" ] [ text "Close" ]
                 ]
             ]
 
