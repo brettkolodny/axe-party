@@ -2,12 +2,21 @@ import "./style.css";
 import { Elm } from "./src/Main.elm";
 
 if (process.env.NODE_ENV === "development") {
-    const ElmDebugTransform = await import("elm-debug-transformer")
+  const ElmDebugTransform = await import("elm-debug-transformer");
 
-    ElmDebugTransform.register({
-        simple_mode: true
-    })
+  ElmDebugTransform.register({
+    simple_mode: true,
+  });
 }
 
 const root = document.querySelector("#app div");
-const app = Elm.Main.init({ node: root, flags: null });
+
+const gameState = window.localStorage.getItem("gameState");
+const app = Elm.Main.init({
+  node: root,
+  flags: gameState ? JSON.parse(gameState) : null,
+});
+
+app.ports.saveState.subscribe((gameState) => {
+  window.localStorage.setItem("gameState", JSON.stringify(gameState));
+});

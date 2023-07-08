@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Browser
 import Fireworks exposing (Color(..), Firework, fireworkAt, fireworkView)
@@ -92,26 +92,33 @@ newModel =
 -- Main
 
 
-main : Program () Model Msg
+main : Program (Maybe GameState) Model Msg
 main =
     Browser.element { init = init, update = update, view = view, subscriptions = \model -> Particle.System.sub [] ParticleMsg model.fireworks }
+
+
+
+-- Ports
+
+
+port saveState : GameState -> Cmd msg
 
 
 
 -- Init
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( newModel, Cmd.none )
+init : Maybe GameState -> ( Model, Cmd Msg )
+init maybeGameState =
+    case maybeGameState of
+        Just gameState ->
+            ( { newModel | gameState = gameState }, Cmd.none )
+
+        Nothing ->
+            ( newModel, Cmd.none )
 
 
 
--- case maybeModel of
---     Just model ->
---         ( model, Cmd.none )
---     Nothing ->
---         ( newModel, Cmd.none )
 -- Update
 
 
@@ -119,7 +126,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ResetGame ->
-            ( newModel, Cmd.none )
+            ( newModel, saveState newModel.gameState )
 
         SetCurrentThrow role throw ->
             let
@@ -128,23 +135,26 @@ update msg model =
 
                 updatePlayerCurrentThrow player =
                     { player | currentThrow = throw }
-            in
-            case role of
-                Player1 ->
-                    ( { model | gameState = { gameState | player1 = updatePlayerCurrentThrow gameState.player1 } }, Cmd.none )
 
-                Player2 ->
-                    ( { model | gameState = { gameState | player2 = updatePlayerCurrentThrow gameState.player2 } }, Cmd.none )
+                newGameState =
+                    case role of
+                        Player1 ->
+                            { gameState | player1 = updatePlayerCurrentThrow gameState.player1 }
+
+                        Player2 ->
+                            { gameState | player2 = updatePlayerCurrentThrow gameState.player2 }
+            in
+            ( { model | gameState = newGameState }, saveState newGameState )
 
         SwapSides ->
             let
                 gameState =
                     model.gameState
 
-                swapSides =
+                newGameState =
                     { gameState | swapSides = not gameState.swapSides }
             in
-            ( { model | gameState = swapSides }, Cmd.none )
+            ( { model | gameState = newGameState }, saveState newGameState )
 
         SetNumThrows numThrows ->
             let
@@ -180,7 +190,7 @@ update msg model =
             ( { model
                 | gameState = newGameState
               }
-            , Cmd.none
+            , saveState newGameState
             )
 
         SetShowResetModal show ->
@@ -253,7 +263,7 @@ update msg model =
                 updatePlayerThrows player =
                     { player | throws = setThrows player.throws, currentThrow = Nothing }
 
-                updateGameState =
+                newGameState =
                     case role of
                         Player1 ->
                             { gameState | player1 = updatePlayerThrows gameState.player1 }
@@ -277,7 +287,7 @@ update msg model =
                     else
                         Cmd.none
             in
-            ( { model | gameState = updateGameState }, cmd )
+            ( { model | gameState = newGameState }, Cmd.batch [ saveState newGameState, cmd ] )
 
 
 
