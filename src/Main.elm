@@ -47,14 +47,19 @@ type alias Player =
     }
 
 
-type alias Model =
+type alias GameState =
     { player1 : Player
     , player2 : Player
+    , numThrows : Int
+    , swapSides : Bool
+    }
+
+
+type alias Model =
+    { gameState : GameState
     , showResetModal : Bool
     , showOptionsModal : Bool
     , fireworks : Particle.System.System Firework
-    , numThrows : Int
-    , swapSides : Bool
     }
 
 
@@ -71,13 +76,15 @@ newPlayer numThrows =
 
 newModel : Model
 newModel =
-    { player1 = newPlayer 5
-    , player2 = newPlayer 5
+    { gameState =
+        { player1 = newPlayer 5
+        , player2 = newPlayer 5
+        , numThrows = 5
+        , swapSides = False
+        }
     , showResetModal = False
     , showOptionsModal = False
     , fireworks = Particle.System.init <| Random.initialSeed 0
-    , numThrows = 5
-    , swapSides = False
     }
 
 
@@ -100,6 +107,11 @@ init _ =
 
 
 
+-- case maybeModel of
+--     Just model ->
+--         ( model, Cmd.none )
+--     Nothing ->
+--         ( newModel, Cmd.none )
 -- Update
 
 
@@ -109,16 +121,30 @@ update msg model =
         ResetGame ->
             ( newModel, Cmd.none )
 
-        SetCurrentThrow player throw ->
-            case player of
+        SetCurrentThrow role throw ->
+            let
+                gameState =
+                    model.gameState
+
+                updatePlayerCurrentThrow player =
+                    { player | currentThrow = throw }
+            in
+            case role of
                 Player1 ->
-                    ( { model | player1 = { currentThrow = throw, throws = model.player1.throws } }, Cmd.none )
+                    ( { model | gameState = { gameState | player1 = updatePlayerCurrentThrow gameState.player1 } }, Cmd.none )
 
                 Player2 ->
-                    ( { model | player2 = { currentThrow = throw, throws = model.player2.throws } }, Cmd.none )
+                    ( { model | gameState = { gameState | player2 = updatePlayerCurrentThrow gameState.player2 } }, Cmd.none )
 
         SwapSides ->
-            ( { model | swapSides = not model.swapSides }, Cmd.none )
+            let
+                gameState =
+                    model.gameState
+
+                swapSides =
+                    { gameState | swapSides = not gameState.swapSides }
+            in
+            ( { model | gameState = swapSides }, Cmd.none )
 
         SetNumThrows numThrows ->
             let
@@ -130,21 +156,29 @@ update msg model =
                         player.throws ++ List.repeat (numThrows - List.length player.throws) Nothing
 
                 player1 =
-                    model.player1
+                    model.gameState.player1
 
                 newPlayer1 =
                     { player1 | throws = setPlayerThrows player1 }
 
                 player2 =
-                    model.player2
+                    model.gameState.player2
 
                 newPlayer2 =
                     { player2 | throws = setPlayerThrows player2 }
+
+                gameState =
+                    model.gameState
+
+                newGameState =
+                    { gameState
+                        | numThrows = numThrows
+                        , player1 = newPlayer1
+                        , player2 = newPlayer2
+                    }
             in
             ( { model
-                | numThrows = numThrows
-                , player1 = newPlayer1
-                , player2 = newPlayer2
+                | gameState = newGameState
               }
             , Cmd.none
             )
@@ -171,15 +205,18 @@ update msg model =
         ParticleMsg inner ->
             ( { model | fireworks = Particle.System.update inner model.fireworks }, Cmd.none )
 
-        SetScore player throw score ->
+        SetScore role throw score ->
             let
+                gameState =
+                    model.gameState
+
                 playerThrows =
-                    case player of
+                    case role of
                         Player1 ->
-                            model.player1.throws
+                            gameState.player1.throws
 
                         Player2 ->
-                            model.player2.throws
+                            gameState.player2.throws
 
                 throwNumber throws =
                     case throw of
@@ -211,7 +248,18 @@ update msg model =
                         |> setThrows
                         |> List.map (\t -> Maybe.withDefault 0 t)
                         |> List.foldl (\t acc -> t + acc) 0
-                        |> (\total -> total == model.numThrows * 5)
+                        |> (\total -> total == model.gameState.numThrows * 5)
+
+                updatePlayerThrows player =
+                    { player | throws = setThrows player.throws, currentThrow = Nothing }
+
+                updateGameState =
+                    case role of
+                        Player1 ->
+                            { gameState | player1 = updatePlayerThrows gameState.player1 }
+
+                        Player2 ->
+                            { gameState | player2 = updatePlayerThrows gameState.player2 }
 
                 cmd =
                     if perfectGame then
@@ -229,12 +277,7 @@ update msg model =
                     else
                         Cmd.none
             in
-            case player of
-                Player1 ->
-                    ( { model | player1 = { throws = setThrows model.player1.throws, currentThrow = Nothing } }, cmd )
-
-                Player2 ->
-                    ( { model | player2 = { throws = setThrows model.player2.throws, currentThrow = Nothing } }, cmd )
+            ( { model | gameState = updateGameState }, cmd )
 
 
 
@@ -245,11 +288,11 @@ view : Model -> Html Msg
 view model =
     let
         gameBoard =
-            if model.swapSides then
-                [ game model Player2, game model Player1 ]
+            if model.gameState.swapSides then
+                [ game model.gameState Player2, game model.gameState Player1 ]
 
             else
-                [ game model Player1, game model Player2 ]
+                [ game model.gameState Player1, game model.gameState Player2 ]
     in
     div
         [ class "flex flex-col justify-center items-center min-w-screen min-h-screen bg-thunder-900 gap-12"
@@ -272,16 +315,16 @@ view model =
         ]
 
 
-game : Model -> Role -> Html Msg
-game model player =
+game : GameState -> Role -> Html Msg
+game gameState player =
     let
         ( playerDisplay, throws, currentThrow ) =
             case player of
                 Player1 ->
-                    ( "Player 1", model.player1.throws, model.player1.currentThrow )
+                    ( "Player 1", gameState.player1.throws, gameState.player1.currentThrow )
 
                 Player2 ->
-                    ( "Player 2", model.player2.throws, model.player2.currentThrow )
+                    ( "Player 2", gameState.player2.throws, gameState.player2.currentThrow )
 
         roundOver =
             case List.Extra.find (\t -> Maybe.Extra.isNothing t) throws of
@@ -420,9 +463,9 @@ optionsModal model =
             [ div [ class "flex flex-col justify-center items-center gap-6 bg-thunder-50 p-8" ]
                 [ h2 [ class "text-2xl font-bold" ] [ text "Options" ]
                 , div [ class "flex items-center justify-between gap-12 w-full" ]
-                    [ button [ onClick <| SetNumThrows <| model.numThrows - 1, class "bg-hatchets-green text-white py-2 w-12" ] [ text "-1" ]
-                    , p [ class "text-2xl" ] [ text <| String.fromInt model.numThrows ++ " throws" ]
-                    , button [ onClick <| SetNumThrows <| model.numThrows + 1, class "bg-hatchets-green text-white py-2 w-12" ] [ text "+1" ]
+                    [ button [ onClick <| SetNumThrows <| model.gameState.numThrows - 1, class "bg-hatchets-green text-white py-2 w-12" ] [ text "-1" ]
+                    , p [ class "text-2xl" ] [ text <| String.fromInt model.gameState.numThrows ++ " throws" ]
+                    , button [ onClick <| SetNumThrows <| model.gameState.numThrows + 1, class "bg-hatchets-green text-white py-2 w-12" ] [ text "+1" ]
                     ]
                 , button [ onClick <| SetShowOptionsModal False, class "px-3 py-2 bg-thunder-400 text-white" ] [ text "Close" ]
                 ]

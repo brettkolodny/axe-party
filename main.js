@@ -10,4 +10,4 @@ if (process.env.NODE_ENV === "development") {
 }
 
 const root = document.querySelector("#app div");
-const app = Elm.Main.init({ node: root });
+const app = Elm.Main.init({ node: root, flags: null });
