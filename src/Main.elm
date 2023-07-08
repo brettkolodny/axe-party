@@ -5,6 +5,7 @@ import Fireworks exposing (Color(..), Firework, fireworkAt, fireworkView)
 import Html exposing (Html, button, div, h1, h2, input, p, text)
 import Html.Attributes exposing (class, disabled, style, type_)
 import Html.Events exposing (onClick)
+import Json.Decode as D exposing (map4)
 import List.Extra exposing (setAt)
 import Maybe.Extra
 import Particle.System
@@ -92,7 +93,7 @@ newModel =
 -- Main
 
 
-main : Program (Maybe GameState) Model Msg
+main : Program (Maybe String) Model Msg
 main =
     Browser.element { init = init, update = update, view = view, subscriptions = \model -> Particle.System.sub [] ParticleMsg model.fireworks }
 
@@ -108,14 +109,34 @@ port saveState : GameState -> Cmd msg
 -- Init
 
 
-init : Maybe GameState -> ( Model, Cmd Msg )
-init maybeGameState =
-    case maybeGameState of
-        Just gameState ->
-            ( { newModel | gameState = gameState }, Cmd.none )
+init : Maybe String -> ( Model, Cmd Msg )
+init maybeGameStateString =
+    case maybeGameStateString of
+        Just gameStateString ->
+            let
+                decodePlayer =
+                    D.map2
+                        Player
+                        (D.field "throws" <| D.list <| D.maybe D.int)
+                        (D.field "currentThrow" <| D.maybe <| D.int)
+
+                decodeGameState =
+                    D.map4
+                        GameState
+                        (D.field "player1" decodePlayer)
+                        (D.field "player2" decodePlayer)
+                        (D.field "numThrows" D.int)
+                        (D.field "swapSides" D.bool)
+            in
+            case D.decodeString decodeGameState gameStateString of
+                Ok gameState ->
+                    ( { newModel | gameState = gameState }, Cmd.none )
+
+                Err _ ->
+                    ( newModel, saveState newModel.gameState )
 
         Nothing ->
-            ( newModel, Cmd.none )
+            ( newModel, saveState newModel.gameState )
 
 
 

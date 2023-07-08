@@ -14,7 +14,7 @@ const root = document.querySelector("#app div");
 const gameState = window.localStorage.getItem("gameState");
 const app = Elm.Main.init({
   node: root,
-  flags: gameState ? JSON.parse(gameState) : null,
+  flags: gameState,
 });
 
 app.ports.saveState.subscribe((gameState) => {
