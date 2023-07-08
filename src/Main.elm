@@ -2,10 +2,10 @@ port module Main exposing (main)
 
 import Browser
 import Fireworks exposing (Color(..), Firework, fireworkAt, fireworkView)
-import Html exposing (Html, button, div, h1, h2, input, p, text)
-import Html.Attributes exposing (class, disabled, style, type_)
+import Html exposing (Html, button, div, h1, h2, p, text)
+import Html.Attributes exposing (class, disabled, style)
 import Html.Events exposing (onClick)
-import Json.Decode as D exposing (map4)
+import Json.Decode as D
 import List.Extra exposing (setAt)
 import Maybe.Extra
 import Particle.System
