@@ -413,10 +413,10 @@ scoreButton player points currentThrow isDisabled =
     let
         style =
             if not isDisabled then
-                "w-full h-10 bg-hatchets-green-600 font-bold text-white text-[18px]"
+                "w-full h-12 bg-hatchets-green-600 font-bold text-white text-[24px]"
 
             else
-                "w-full h-10 bg-hatchets-green-600/50 font-bold text-thunder-50 text-[18px] cursor-not-allowed"
+                "w-full h-12 bg-hatchets-green-600/50 font-bold text-thunder-50 text-[24px] cursor-not-allowed"
     in
     button
         [ onClick (SetScore player currentThrow (Just points))
@@ -494,9 +494,9 @@ optionsModal model =
             [ div [ class "flex flex-col justify-center items-center gap-6 bg-thunder-50 p-8" ]
                 [ h2 [ class "text-2xl font-bold" ] [ text "Options" ]
                 , div [ class "flex items-center justify-between gap-12 w-full" ]
-                    [ button [ onClick <| SetNumThrows <| model.gameState.numThrows - 1, class "bg-hatchets-green text-white py-2 w-12" ] [ text "-1" ]
+                    [ button [ onClick <| SetNumThrows <| model.gameState.numThrows - 1, class "bg-hatchets-green text-white py-2 w-20" ] [ text "Remove" ]
                     , p [ class "text-2xl" ] [ text <| String.fromInt model.gameState.numThrows ++ " throws" ]
-                    , button [ onClick <| SetNumThrows <| model.gameState.numThrows + 1, class "bg-hatchets-green text-white py-2 w-12" ] [ text "+1" ]
+                    , button [ onClick <| SetNumThrows <| model.gameState.numThrows + 1, class "bg-hatchets-green text-white py-2 w-20" ] [ text "Add" ]
                     ]
                 , button [ onClick <| SetShowOptionsModal False, class "px-3 py-2 bg-thunder-400 text-white" ] [ text "Close" ]
                 ]
