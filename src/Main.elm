@@ -147,7 +147,17 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ResetGame ->
-            ( newModel, saveState newModel.gameState )
+            let
+                gameState =
+                    newModel.gameState
+
+                numThrows =
+                    model.gameState.numThrows
+
+                newGameState =
+                    { gameState | numThrows = numThrows, player1 = newPlayer numThrows, player2 = newPlayer numThrows }
+            in
+            ( { newModel | gameState = newGameState }, saveState newModel.gameState )
 
         SetCurrentThrow role throw ->
             let
